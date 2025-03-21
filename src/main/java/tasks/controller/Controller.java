@@ -15,7 +15,7 @@ import javafx.stage.Stage;
 import org.apache.log4j.Logger;
 import tasks.model.Task;
 import tasks.services.DateService;
-import tasks.services.TaskIO;
+import tasks.services.TaskIOService;
 import tasks.services.TasksService;
 import tasks.view.Main;
 
@@ -30,13 +30,14 @@ public class Controller {
     TasksService service;
     DateService dateService;
 
-    public static Stage editNewStage;
+    public static Stage newStage;
+    public static final Stage editStage = new Stage();
     public static Stage infoStage;
 
     public static TableView mainTable;
 
     @FXML
-    public  TableView tasks;
+    public TableView<Task> tasks;
     @FXML
     private TableColumn<Task, String> columnTitle;
     @FXML
@@ -54,10 +55,10 @@ public class Controller {
     @FXML
     private TextField fieldTimeTo;
 
-    public void setService(TasksService service){
-        this.service=service;
-        this.dateService=new DateService(service);
-        this.tasksList=service.getObservableList();
+    public void setService(TasksService service) {
+        this.service = service;
+        this.dateService = new DateService(service);
+        this.tasksList = service.getObservableList();
         updateCountLabel(tasksList);
         tasks.setItems(tasksList);
         mainTable = tasks;
@@ -70,51 +71,83 @@ public class Controller {
     }
 
     @FXML
-    public void initialize(){
+    public void initialize() {
         log.info("Main controller initializing");
         columnTitle.setCellValueFactory(new PropertyValueFactory<>("title"));
         columnTime.setCellValueFactory(new PropertyValueFactory<>("formattedDateStart"));
         columnRepeated.setCellValueFactory(new PropertyValueFactory<>("formattedRepeated"));
     }
-    private void updateCountLabel(ObservableList<Task> list){
-        labelCount.setText(list.size()+ " elements");
+
+    private void updateCountLabel(ObservableList<Task> list) {
+        labelCount.setText(list.size() + " elements");
     }
 
     @FXML
-    public void showTaskDialog(ActionEvent actionEvent){
+    public void showTaskDialogNew(ActionEvent actionEvent) {
         Object source = actionEvent.getSource();
-        NewEditController.setClickedButton((Button) source);
+        NewController.setClickedButton((Button) source);
 
         try {
-            editNewStage = new Stage();
-            NewEditController.setCurrentStage(editNewStage);
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/new-edit-task.fxml"));
-            Parent root = loader.load();//getClass().getResource("/fxml/new-edit-task.fxml"));
-            NewEditController editCtrl = loader.getController();
+            newStage = new Stage();
+            NewController.setCurrentStage(newStage);
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/new-task.fxml"));
+            Parent root = loader.load();//getClass().getResource("/fxml/new-task.fxml"));
+            NewController editCtrl = loader.getController();
             editCtrl.setService(service);
             editCtrl.setTasksList(tasksList);
-            editCtrl.setCurrentTask((Task)mainTable.getSelectionModel().getSelectedItem());
-            editNewStage.setScene(new Scene(root, 600, 350));
-            editNewStage.setResizable(false);
-            editNewStage.initOwner(Main.primaryStage);
-            editNewStage.initModality(Modality.APPLICATION_MODAL);//??????
-            editNewStage.show();
-        }
-        catch (IOException e){
-            log.error("Error loading new-edit-task.fxml");
+            editCtrl.setCurrentTask((Task) mainTable.getSelectionModel().getSelectedItem());
+            newStage.setScene(new Scene(root, 600, 350));
+            newStage.setResizable(false);
+            newStage.initOwner(Main.primaryStage);
+            newStage.initModality(Modality.APPLICATION_MODAL);//??????
+            newStage.show();
+        } catch (IOException e) {
+            log.error("Error loading new-task.fxml");
         }
     }
+
     @FXML
-    public void deleteTask(){
-        Task toDelete = (Task)tasks.getSelectionModel().getSelectedItem();
+    public void showTaskDialogEdit(ActionEvent actionEvent) {
+        Object source = actionEvent.getSource();
+        EditController.setClickedButton((Button) source);
+
+        try {
+            EditController.setCurrentStage(editStage);
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/edit-task.fxml"));
+            Parent root = loader.load();//getClass().getResource("/fxml/new-task.fxml"));
+            EditController editCtrl = loader.getController();
+            editCtrl.setService(service);
+            editCtrl.setTasksList(tasksList);
+            editCtrl.setCurrentTask((Task) mainTable.getSelectionModel().getSelectedItem());
+            editStage.setScene(new Scene(root, 600, 350));
+            editStage.setResizable(false);
+            editStage.initOwner(Main.primaryStage);
+            editStage.initModality(Modality.APPLICATION_MODAL);//??????
+            editStage.show();
+        } catch (IOException e) {
+            log.error("Error loading new-task.fxml");
+        }
+    }
+
+    @FXML
+    public void deleteTask() {
+        Task toDelete = tasks.getSelectionModel().getSelectedItem();
+
+        if (toDelete == null) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Please select a task", ButtonType.OK);
+            alert.showAndWait();
+            return;
+        }
+
         tasksList.remove(toDelete);
-        TaskIO.rewriteFile(tasksList);
+        TaskIOService.rewriteFile(tasksList);
     }
+
     @FXML
-    public void showDetailedInfo(){
+    public void showDetailedInfo() {
         try {
             Stage stage = new Stage();
-            FXMLLoader loader =new FXMLLoader(getClass().getResource("/fxml/task-info.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/task-info.fxml"));
             Parent root = loader.load();
             stage.setScene(new Scene(root, 550, 350));
             stage.setResizable(false);
@@ -122,29 +155,36 @@ public class Controller {
             stage.initModality(Modality.APPLICATION_MODAL);//??????
             infoStage = stage;
             stage.show();
-        }
-        catch (IOException e){
+        } catch (IOException e) {
             log.error("error loading task-info.fxml");
         }
     }
+
     @FXML
-    public void showFilteredTasks(){
+    public void showFilteredTasks() {
         Date start = getDateFromFilterField(datePickerFrom.getValue(), fieldTimeFrom.getText());
         Date end = getDateFromFilterField(datePickerTo.getValue(), fieldTimeTo.getText());
 
-        Iterable<Task> filtered =  service.filterTasks(start, end);
+        if (start == null || end == null || start.after(end)) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Start date cannot be after end date!", ButtonType.OK);
+            alert.showAndWait();
+            return;
+        }
 
-        ObservableList<Task> observableTasks = FXCollections.observableList((ArrayList)filtered);
+        Iterable<Task> filtered = service.filterTasks(start, end);
+
+        ObservableList<Task> observableTasks = FXCollections.observableList((ArrayList) filtered);
         tasks.setItems(observableTasks);
         updateCountLabel(observableTasks);
     }
-    private Date getDateFromFilterField(LocalDate localDate, String time){
+
+    private Date getDateFromFilterField(LocalDate localDate, String time) {
         Date date = dateService.getDateValueFromLocalDate(localDate);
         return dateService.getDateMergedWithTime(time, date);
     }
 
 
-    public void resetFilteredTasks(){
+    public void resetFilteredTasks() {
         tasks.setItems(tasksList);
         //abc
     }

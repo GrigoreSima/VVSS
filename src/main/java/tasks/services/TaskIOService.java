@@ -2,7 +2,7 @@ package tasks.services;
 
 import javafx.collections.ObservableList;
 import org.apache.log4j.Logger;
-import tasks.model.LinkedTaskList;
+import tasks.model.ArrayTaskList;
 import tasks.model.Task;
 import tasks.model.TaskList;
 import tasks.view.*;
@@ -12,14 +12,14 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class TaskIO {
+public class TaskIOService {
     private static final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("[yyyy-MM-dd HH:mm:ss.SSS]");
     private static final String[] TIME_ENTITY = {" day"," hour", " minute"," second"};
     private static final int secondsInDay = 86400;
     private static final int secondsInHour = 3600;
     private static final int secondsInMin = 60;
 
-    private static final Logger log = Logger.getLogger(TaskIO.class.getName());
+    private static final Logger log = Logger.getLogger(TaskIOService.class.getName());
     public static void write(TaskList tasks, OutputStream out) throws IOException {
         DataOutputStream dataOutputStream = new DataOutputStream(out);
         try {
@@ -119,15 +119,11 @@ public class TaskIO {
 
     }
     public static void writeText(TaskList tasks, File file) throws IOException {
-        FileWriter fileWriter = new FileWriter(file);
-        try {
+        try (FileWriter fileWriter = new FileWriter(file)) {
             write(tasks, fileWriter);
         }
         catch (IOException e ){
             log.error("IO exception reading or writing file");
-        }
-        finally {
-            fileWriter.close();
         }
 
     }
@@ -272,7 +268,8 @@ public class TaskIO {
         int seconds = (interval - (secondsInDay*days + secondsInHour*hours + secondsInMin*minutes));
 
         int[] time = new int[]{days, hours, minutes, seconds};
-        int i = 0, j = time.length-1;
+        int i = 0;
+        int j = time.length-1;
         while (time[i] == 0 || time[j] == 0){
             if (time[i] == 0) i++;
             if (time[j] == 0) j--;
@@ -288,12 +285,12 @@ public class TaskIO {
 
 
     public static void rewriteFile(ObservableList<Task> tasksList) {
-        LinkedTaskList taskList = new LinkedTaskList();
+        TaskList taskList = new ArrayTaskList();
         for (Task t : tasksList){
             taskList.add(t);
         }
         try {
-            TaskIO.writeBinary(taskList, Main.savedTasksFile);
+            TaskIOService.writeBinary(taskList, Main.savedTasksFile);
         }
         catch (IOException e){
             log.error("IO exception reading or writing file");

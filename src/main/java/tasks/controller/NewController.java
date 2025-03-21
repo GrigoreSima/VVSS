@@ -15,25 +15,25 @@ import javafx.stage.Stage;
 import org.apache.log4j.Logger;
 import tasks.model.Task;
 import tasks.services.DateService;
-import tasks.services.TaskIO;
+import tasks.services.TaskIOService;
 import tasks.services.TasksService;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Date;
 
-public class NewEditController {
+public class NewController {
 
     private static Button clickedButton;
 
-    private static final Logger log = Logger.getLogger(NewEditController.class.getName());
+    private static final Logger log = Logger.getLogger(NewController.class.getName());
 
     public static void setClickedButton(Button clickedButton) {
-        NewEditController.clickedButton = clickedButton;
+        NewController.clickedButton = clickedButton;
     }
 
     public static void setCurrentStage(Stage currentStage) {
-        NewEditController.currentStage = currentStage;
+        NewController.currentStage = currentStage;
     }
 
     private static Stage currentStage;
@@ -76,24 +76,14 @@ public class NewEditController {
     }
     public void setCurrentTask(Task task){
         this.currentTask=task;
-        switch (clickedButton.getId()){
-            case  "btnNew" : initNewWindow("New Task");
-                break;
-            case "btnEdit" : initEditWindow("Edit Task");
-                break;
+        if (clickedButton.getId().equals("btnNew")) {
+            initNewWindow("New Task");
         }
     }
 
     @FXML
     public void initialize(){
         log.info("new/edit window initializing");
-//        switch (clickedButton.getId()){
-//            case  "btnNew" : initNewWindow("New Task");
-//                break;
-//            case "btnEdit" : initEditWindow("Edit Task");
-//                break;
-//        }
-
     }
     private void initNewWindow(String title){
         currentStage.setTitle(title);
@@ -101,24 +91,6 @@ public class NewEditController {
         txtFieldTimeStart.setText(DEFAULT_START_TIME);
     }
 
-    private void initEditWindow(String title){
-        currentStage.setTitle(title);
-        fieldTitle.setText(currentTask.getTitle());
-        datePickerStart.setValue(dateService.getLocalDateValueFromDate(currentTask.getStartTime()));
-        txtFieldTimeStart.setText(dateService.getTimeOfTheDayFromDate(currentTask.getStartTime()));
-
-        if (currentTask.isRepeated()){
-            checkBoxRepeated.setSelected(true);
-            hideRepeatedTaskModule(false);
-            datePickerEnd.setValue(dateService.getLocalDateValueFromDate(currentTask.getEndTime()));
-            fieldInterval.setText(service.getIntervalInHours(currentTask));
-            txtFieldTimeEnd.setText(dateService.getTimeOfTheDayFromDate(currentTask.getEndTime()));
-        }
-        if (currentTask.isActive()){
-            checkBoxActive.setSelected(true);
-
-        }
-    }
     @FXML
     public void switchRepeatedCheckbox(ActionEvent actionEvent){
         CheckBox source = (CheckBox)actionEvent.getSource();
@@ -155,12 +127,12 @@ public class NewEditController {
             }
             currentTask = null;
         }
-        TaskIO.rewriteFile(tasksList);
-        Controller.editNewStage.close();
+        TaskIOService.rewriteFile(tasksList);
+        Controller.newStage.close();
     }
     @FXML
     public void closeDialogWindow(){
-        Controller.editNewStage.close();
+        Controller.newStage.close();
     }
 
     private Task collectFieldsData(){

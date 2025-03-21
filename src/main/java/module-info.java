@@ -3,6 +3,7 @@ module tasks {
     requires javafx.fxml;
     requires org.controlsfx.controls;
     requires log4j;
+    requires java.logging;
 
     opens tasks.model to javafx.base;
     exports tasks.model;

@@ -4,12 +4,14 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import tasks.model.ArrayTaskList;
 import tasks.model.Task;
-import tasks.model.TasksOperations;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.logging.Logger;
 
 public class TasksService {
 
+    private Logger logger = Logger.getLogger(TasksService.class.getName());
     private ArrayTaskList tasks;
 
     public TasksService(ArrayTaskList tasks){
@@ -45,10 +47,15 @@ public class TasksService {
     }
 
     public Iterable<Task> filterTasks(Date start, Date end){
-        TasksOperations tasksOps = new TasksOperations(getObservableList());
-        Iterable<Task> filtered = tasksOps.incoming(start,end);
-        //Iterable<Task> filtered = tasks.incoming(start, end);
-
-        return filtered;
+        ArrayList<Task> showedTasks = new ArrayList<>(getObservableList());
+        ArrayList<Task> incomingTasks = new ArrayList<>();
+        for (Task t : showedTasks) {
+            Date nextTime = t.nextTimeAfter(start);
+            if (nextTime != null && (nextTime.before(end) || nextTime.equals(end))) {
+                incomingTasks.add(t);
+                logger.info(t.getTitle());
+            }
+        }
+        return incomingTasks;
     }
 }
