@@ -39,7 +39,6 @@ public class NewController {
     private static Stage currentStage;
 
     private Task currentTask;
-    private ObservableList<Task> tasksList;
     private TasksService service;
     private DateService dateService;
 
@@ -66,42 +65,44 @@ public class NewController {
     private static final String DEFAULT_END_TIME = "10:00";
     private static final String DEFAULT_INTERVAL_TIME = "0:30";
 
-    public void setTasksList(ObservableList<Task> tasksList){
-        this.tasksList =tasksList;
+    public void setTasksList(ObservableList<Task> tasksList) {
+        TaskIOService.setTaskList(tasksList);
     }
 
-    public void setService(TasksService service){
-        this.service =service;
-        this.dateService =new DateService(service);
+    public void setService(TasksService service) {
+        this.service = service;
+        this.dateService = new DateService(service);
     }
-    public void setCurrentTask(Task task){
-        this.currentTask=task;
+
+    public void setCurrentTask(Task task) {
+        this.currentTask = task;
         if (clickedButton.getId().equals("btnNew")) {
             initNewWindow("New Task");
         }
     }
 
     @FXML
-    public void initialize(){
+    public void initialize() {
         log.info("new/edit window initializing");
     }
-    private void initNewWindow(String title){
+
+    private void initNewWindow(String title) {
         currentStage.setTitle(title);
         datePickerStart.setValue(LocalDate.now());
         txtFieldTimeStart.setText(DEFAULT_START_TIME);
     }
 
     @FXML
-    public void switchRepeatedCheckbox(ActionEvent actionEvent){
-        CheckBox source = (CheckBox)actionEvent.getSource();
-        if (source.isSelected()){
+    public void switchRepeatedCheckbox(ActionEvent actionEvent) {
+        CheckBox source = (CheckBox) actionEvent.getSource();
+        if (source.isSelected()) {
             hideRepeatedTaskModule(false);
-        }
-        else if (!source.isSelected()){
+        } else if (!source.isSelected()) {
             hideRepeatedTaskModule(true);
         }
     }
-    private void hideRepeatedTaskModule(boolean toShow){
+
+    private void hideRepeatedTaskModule(boolean toShow) {
         datePickerEnd.setDisable(toShow);
         fieldInterval.setDisable(toShow);
         txtFieldTimeEnd.setDisable(toShow);
@@ -112,36 +113,27 @@ public class NewController {
     }
 
     @FXML
-    public void saveChanges(){
-        Task collectedFieldsTask = collectFieldsData();
+    public void saveChanges() {
+        Task task = collectFieldsData();
         if (incorrectInputMade) return;
 
-        if (currentTask == null){//no task was chosen -> add button was pressed
-            tasksList.add(collectedFieldsTask);
+        if (currentTask == null) {//no task was chosen -> add button was pressed=
+            TaskIOService.add(task);
         }
-        else {
-            for (int i = 0; i < tasksList.size(); i++){
-                if (currentTask.equals(tasksList.get(i))){
-                    tasksList.set(i,collectedFieldsTask);
-                }
-            }
-            currentTask = null;
-        }
-        TaskIOService.rewriteFile(tasksList);
-        Controller.newStage.close();
-    }
-    @FXML
-    public void closeDialogWindow(){
         Controller.newStage.close();
     }
 
-    private Task collectFieldsData(){
+    @FXML
+    public void closeDialogWindow() {
+        Controller.newStage.close();
+    }
+
+    private Task collectFieldsData() {
         incorrectInputMade = false;
         Task result = null;
         try {
             result = makeTask();
-        }
-        catch (RuntimeException e){
+        } catch (RuntimeException e) {
             incorrectInputMade = true;
             try {
                 Stage stage = new Stage();
@@ -150,27 +142,25 @@ public class NewController {
                 stage.setResizable(false);
                 stage.initModality(Modality.APPLICATION_MODAL);
                 stage.show();
-            }
-            catch (IOException ioe){
+            } catch (IOException ioe) {
                 log.error("error loading field-validator.fxml");
             }
         }
         return result;
     }
 
-    private Task makeTask(){
+    private Task makeTask() {
         Task result;
         String newTitle = fieldTitle.getText();
         Date startDateWithNoTime = dateService.getDateValueFromLocalDate(datePickerStart.getValue());//ONLY date!!without time
         Date newStartDate = dateService.getDateMergedWithTime(txtFieldTimeStart.getText(), startDateWithNoTime);
-        if (checkBoxRepeated.isSelected()){
+        if (checkBoxRepeated.isSelected()) {
             Date endDateWithNoTime = dateService.getDateValueFromLocalDate(datePickerEnd.getValue());
             Date newEndDate = dateService.getDateMergedWithTime(txtFieldTimeEnd.getText(), endDateWithNoTime);
             int newInterval = service.parseFromStringToSeconds(fieldInterval.getText());
             if (newStartDate.after(newEndDate)) throw new IllegalArgumentException("Start date should be before end");
-            result = new Task(newTitle, newStartDate,newEndDate, newInterval);
-        }
-        else {
+            result = new Task(newTitle, newStartDate, newEndDate, newInterval);
+        } else {
             result = new Task(newTitle, newStartDate);
         }
         boolean isActive = checkBoxActive.isSelected();

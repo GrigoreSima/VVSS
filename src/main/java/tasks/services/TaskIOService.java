@@ -11,6 +11,7 @@ import java.io.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 public class TaskIOService {
     private static final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("[yyyy-MM-dd HH:mm:ss.SSS]");
@@ -19,7 +20,20 @@ public class TaskIOService {
     private static final int secondsInHour = 3600;
     private static final int secondsInMin = 60;
 
+    private static List<Task> tasksList;
+
     private static final Logger log = Logger.getLogger(TaskIOService.class.getName());
+
+    public static void setTaskList(List<Task> list) {
+        tasksList = list;
+    }
+
+    public static void add(Task task) {
+        log.info("Task was added!");
+        tasksList.add(task);
+        TaskIOService.rewriteFile(tasksList);
+    }
+
     public static void write(TaskList tasks, OutputStream out) throws IOException {
         DataOutputStream dataOutputStream = new DataOutputStream(out);
         try {
@@ -284,7 +298,7 @@ public class TaskIOService {
     }
 
 
-    public static void rewriteFile(ObservableList<Task> tasksList) {
+    public static void rewriteFile(List<Task> tasksList) {
         TaskList taskList = new ArrayTaskList();
         for (Task t : tasksList){
             taskList.add(t);
@@ -295,5 +309,9 @@ public class TaskIOService {
         catch (IOException e){
             log.error("IO exception reading or writing file");
         }
+    }
+
+    public static Task getLast() {
+        return tasksList.get(tasksList.size()-1);
     }
 }
