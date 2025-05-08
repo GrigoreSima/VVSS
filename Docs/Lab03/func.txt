@@ -1,0 +1,25 @@
+1    public Iterable<Task> filterTasks(Date start, Date end) {
+2        ArrayList<Task> showedTasks = new ArrayList<>(getObservableList());
+         ArrayList<Task> incomingTasks = new ArrayList<>();
+3         for (Task t : showedTasks) {
+4            Date nextTime = t.nextTimeAfter(start);
+
+
+5            if (nextTime == null) {
+                 continue;
+             }
+6            if (nextTime.before(end)) {
+7                incomingTasks.add(t);
+                 logger.info(t.getTitle());
+                 continue;
+             }
+8            if (nextTime.equals(end)) {
+9                incomingTasks.add(t);
+                 logger.info(t.getTitle());
+             }
+         }
+10       return incomingTasks;
+     }
+
+
+

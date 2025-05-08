@@ -82,9 +82,9 @@ public class Task implements Serializable, Cloneable {
         }
 
 
-        if (interval <= 0) {
-            log.error("interval <= 0");
-            throw new IllegalArgumentException("interval should be > 0");
+        if (interval < 0) {
+            log.error("interval < 0");
+            throw new IllegalArgumentException("interval should be >= 0");
         }
         this.title = title;
         this.start = start;
@@ -129,7 +129,7 @@ public class Task implements Serializable, Cloneable {
     }
 
     public int getRepeatInterval() {
-        return interval > 0 ? interval : 0;
+        return Math.max(interval, 0);
     }
 
     public void setTime(Date start, Date end, int interval) {
