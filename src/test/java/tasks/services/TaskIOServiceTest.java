@@ -72,7 +72,7 @@ class TaskIOServiceTest {
             TaskIOService.add(task);
         });
 
-        expectedMessage = "interval should be > 0";
+        expectedMessage = "interval should be >= 0";
         actualMessage = exception.getMessage();
 
         assertTrue(actualMessage.contains(expectedMessage));
